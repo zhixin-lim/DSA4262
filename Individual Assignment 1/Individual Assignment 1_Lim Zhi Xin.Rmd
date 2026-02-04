@@ -1,0 +1,245 @@
+---
+title: "Individual Assignment 1_Draft 2"
+author: "Lim Zhi Xin"
+date: "2026-02-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, include=FALSE}
+library(tidyverse)
+```
+## Individual Assignment 1
+
+### Plot 1: Macro
+```{r plot 1 data}
+data1 <- read_csv("data1.csv")
+
+plot1_data <- data1 %>%
+  # Focus on the most prevalent well-known disorders for a Macro view
+  filter(cause %in% c("Depressive disorders", "Anxiety disorders", 
+                      "Bipolar disorder", "Schizophrenia", "Eating disorders")) %>%
+  group_by(cause, sex) %>%
+  summarize(avg_val = mean(val, na.rm = TRUE), .groups='drop') %>%
+  mutate(avg_val_pct = avg_val *100)
+
+plot1_wide <- plot1_data %>%
+  select(cause, sex, avg_val_pct) %>%
+  pivot_wider(
+    names_from = sex,
+    values_from = avg_val_pct
+  )
+
+write.csv(plot1_wide, "plot1_wide.csv", row.names = FALSE)
+```
+Used Datawrapper to create Plot 1.
+
+### Plot 2: Micro
+```{r plot 2 data pt1}
+data2_prevalence <- read_csv("data2_prevalence.csv") %>%
+  # Clean names to match suicide dataset
+  mutate(location = recode(location,
+    "Bolivia (Plurinational State of)" = "Bolivia",
+    "Brunei Darussalam" = "Brunei",
+    "Cabo Verde" = "Cape Verde",
+    "Côte d'Ivoire" = "Cote d'Ivoire",
+    "Democratic People's Republic of Korea" = "North Korea",
+    "Democratic Republic of the Congo" = "Democratic Republic of Congo",
+    "Iran (Islamic Republic of)" = "Iran",
+    "Lao People's Democratic Republic" = "Laos",
+    "Micronesia (Federated States of)" = "Micronesia (country)",
+    "Republic of Korea" = "South Korea",
+    "Republic of Moldova" = "Moldova",
+    "Russian Federation" = "Russia",
+    "Syrian Arab Republic" = "Syria",
+    "Timor-Leste" = "East Timor",
+    "Türkiye" = "Turkey",
+    "United Republic of Tanzania" = "Tanzania",
+    "United States of America" = "United States",
+    "Venezuela (Bolivarian Republic of)" = "Venezuela",
+    "Viet Nam" = "Vietnam"))
+
+# prepare prevalence ratio from data (2021 and age standardized) 
+plot2_depratio <- data2_prevalence %>%
+  filter(cause == "Depressive disorders") %>%
+  select(location, sex, val) %>%
+  pivot_wider(names_from = sex, values_from = val) %>%
+  mutate(depression_ratio = Male/Female) %>%
+  select(location, depression_ratio)
+```
+```{r plot 2 data pt2}
+data2_suicide <- read_csv("data2_suicide.csv")
+
+plot2_suicide <- data2_suicide %>%
+  filter(Year == 2021) %>%
+  rename(location = Entity, 
+         suicide_ratio = `Male to female suicide death rate ratio (age-standardized)`) %>%
+  select(location, suicide_ratio)
+
+```
+```{r plot 2 data pt3}
+plot2_data <- inner_join(plot2_depratio, plot2_suicide, by = "location")
+```
+
+
+```{r plot 2}
+plot2_viz <- plot2_data %>%
+  drop_na() %>%
+  filter(depression_ratio <= 1.5, suicide_ratio <= 10)
+
+ggplot(plot2_viz, aes(x = depression_ratio, y = suicide_ratio)) +
+
+  # Quadrant shading
+  annotate("rect", xmin = 0, xmax = 1, ymin = 1, ymax = 10,
+           fill = "#fbdbd8", alpha = 0.85) +
+
+  # Parity reference lines
+  geom_vline(xintercept = 1, linewidth = 0.7, color = "#555555") +
+  geom_hline(yintercept = 1, linewidth = 0.7, color = "#555555") +
+
+  # Data points
+  geom_point(color = "#2b8cbe", alpha = 0.55, size = 2) +
+
+  # Expected parity marker
+  annotate("point", x = 1, y = 1, shape = 21, size = 3.2,
+           fill = "white", color = "#222222", stroke = 1.2) +
+  annotate("text", x = 1.02, y = 0.38,
+           label = "Expected parity\n(equal rates)",
+           hjust = 0, size = 3, color = "#333333") +
+
+  # Semi-transparent callout band
+  annotate("rect",
+           xmin = 0.03, xmax = 0.53,
+           ymin = 7.1, ymax = 9.6,
+           fill = "white", alpha = 0.50) +
+
+  annotate("text",
+           x = 0.05, y = 9.40,
+           label = "Higher reported depression\namong women, but higher \nsuicide mortality among men.",
+           hjust = 0, vjust = 1,
+           size = 3.5, color = "#222222", lineheight = 1.1) +
+
+  # Axes
+  scale_x_continuous(limits = c(0, 1.5), breaks = c(0, 0.5, 1, 1.5)) +
+  scale_y_continuous(limits = c(0, 10), breaks = seq(0, 10, 2)) +
+
+  # Labels
+  labs(
+    title = "The Gender Paradox in Mental Health Outcomes",
+    subtitle = "Male-to-female ratios of depression prevalence and suicide mortality by country, 2021",
+    x = "Depression prevalence ratio (Male/Female)",
+    y = "Suicide mortality ratio (Male/Female)",
+    caption = "Sources: IHME Global Burden of Disease (2021); \nWorld Health Organization (2024) – with major processing by Our World in Data."
+  ) +
+
+  # Theme
+  theme_minimal(base_family = "sans") +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(color = "#e6e6e6"),
+    plot.title = element_text(size = 18, face = "bold"),
+    plot.subtitle = element_text(size = 11, margin = margin(b = 10)),
+    axis.title = element_text(size = 11),
+    axis.text = element_text(size = 9, color = "#666666"),
+    plot.margin = margin(20, 20, 20, 20),
+    plot.caption = element_text(hjust = 0, margin = margin(t = 10), color = "#666666")
+  )
+
+```
+### Plot 3: Actionable
+```{r plot 3 data}
+plot3_data <- read_csv("data3_suicide.csv") %>%
+  mutate(age_group = case_when(
+        age %in% c("10-14 years", "15-19 years") ~ "Adolescents (10–19)",
+        age %in% c("20-24 years", "25-29 years") ~ "Young adults (20–29)",
+        age %in% c("30-34 years", "35-39 years", "40-44 years", "45-49 years") ~ "Mid-life adults (30–49)",
+        age %in% c("50-54 years", "55-59 years", "60-64 years", "65-69 years") ~ "Older adults (50–69)",
+        age %in% c("70-74 years", "75-79 years", "80+ years") ~ "Elderly (70+)")
+        ) %>%
+  # Calculate average rate per new age bucket
+  group_by(location, sex, age_group) %>%
+  summarize(suicide_rate = mean(val, na.rm = TRUE), 
+            .groups = 'drop') %>% 
+  # Ensure Age Group is a factor for correct X-axis ordering
+  mutate(age_group = factor(age_group, levels = c("Adolescents (10–19)",
+                                                  "Young adults (20–29)",
+                                                  "Mid-life adults (30–49)",
+                                                  "Older adults (50–69)",
+                                                  "Elderly (70+)")
+                            )
+         )
+write.csv(plot3_data, "plot3_data.csv", row.names = FALSE)
+```
+
+```{r plot 3}
+plot3_tidy <- plot3_data %>%
+  mutate(age_group = case_when(
+    age_group == "Adolescents (10–19)" ~ "Adolescents\n(10-19)",
+    age_group == "Young adults (20–29)" ~ "Young adults\n(20-29)",
+    age_group == "Mid-life adults (30–49)" ~ "Mid-life adults\n(30-49)",
+    age_group == "Older adults (50–69)" ~ "Older adults\n(50-69)",
+    age_group == "Elderly (70+)" ~ "Elderly\n(70+)",
+    TRUE ~ age_group
+  )) %>%
+  mutate(age_group = factor(age_group, levels = c(
+    "Adolescents\n(10-19)", "Young adults\n(20-29)", 
+    "Mid-life adults\n(30-49)", "Older adults\n(50-69)", "Elderly\n(70+)"
+  )))
+
+ggplot(plot3_tidy, aes(x = age_group, y = suicide_rate, 
+                       color = sex, linetype = location, 
+                       group = interaction(sex, location))) +
+  
+  # Actionable focus zone
+  annotate("rect", xmin = 4.5, xmax = 5.5, ymin = 0, ymax = Inf, fill = "#b2182b", alpha = 0.05) +
+  annotate("rect", xmin = 1.5, xmax = 2.5, ymin = 0, ymax = Inf, fill = "#b2182b", alpha = 0.05) +
+
+
+  # Data Layers
+  geom_line(data = filter(plot3_tidy, location == "Global"), size = 0.8, alpha = 0.9) +
+  geom_line(data = filter(plot3_tidy, location == "Singapore"), size = 1.6) +
+  geom_point(data = filter(plot3_tidy, location == "Singapore"), size = 3) +
+
+  # Elderly Annotation
+  annotate("text", x = 5, y = 28, label = "Late-life peak", 
+           color = "#7f0000", fontface = "bold", size = 3.7, lineheight = 0.9) +
+  
+  # Young Adult Annotation
+  annotate("text", x = 2.0, y = 27, label = "Early-life spike", 
+           color = "#7f0000", fontface = "bold", size = 3.7, lineheight = 0.9) +
+
+  # Scales & Legend Titles
+  scale_color_manual(values = c("Male" = "#00008b", "Female" = "#FFB6C1"), name = "Sex") +
+  scale_linetype_manual(values = c("Singapore" = "solid", "Global" = "dotted"), name = "Location") +
+  coord_cartesian(ylim = c(0, 38)) +
+
+  # Labels
+  labs(
+    title = "Where Suicide Prevention Misses Men in Singapore",
+    subtitle = "High suicide mortality among young and older men points to distinct intervention failures",
+    x = NULL, 
+    y = "Suicide rate (per 100,000 population)",
+    
+    caption = "Source: IHME Global Burden of Disease (2023)."
+  ) +
+
+  # Theme
+  theme_minimal(base_family = "sans") +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(color = "#e6e6e6"),
+    plot.title = element_text(face = "bold", size = 18, color = "#333333"),
+    plot.subtitle = element_text(size = 12, color = "#666666", margin = margin(b = 15)),
+    axis.text.x = element_text(lineheight = 1, size = 9, color = "#333333"),
+    axis.title.y = element_text(size = 10, color = "#666666"),
+    legend.position = "top",
+    legend.box = "horizontal",
+    legend.title = element_text(face = "bold", size = 10),
+    legend.text = element_text(size = 10),
+    plot.margin = margin(20, 20, 10, 20),
+    plot.caption = element_text(hjust = 0, margin = margin(t = 10), color = "#666666")
+  )
+```
