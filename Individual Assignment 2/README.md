@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Stress Detection in Reddit Posts
 
 ## Overview
@@ -38,6 +37,4 @@ DSA4262 Individual Assignment 2.ipynb
 
 Note: 
 Recommended Python version: 3.10 or 3.11
-=======
-# DSA4262
->>>>>>> 90ce273358cde94752a4b4dfa103bd1db9255f44
+
