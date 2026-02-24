@@ -30,6 +30,8 @@ python3.11 -m venv venv
 source venv/bin/activate   # Mac/Linux
 
 ### 3. Install dependencies
+(pip install --upgrade pip)
+
 pip install -r requirements.txt
 
 ### 4. Run notebook
