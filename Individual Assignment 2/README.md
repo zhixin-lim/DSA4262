@@ -25,7 +25,7 @@ cd DSA4262
 cd "Individual Assignment 2"
 
 ### 2. Create virtual environment
-python3 -m venv venv
+python3.11 -m venv venv
 
 source venv/bin/activate   # Mac/Linux
 
