@@ -18,25 +18,30 @@ This project builds and evaluates multiple models (Structured Features, TF-IDF, 
 ## Setup Instructions
 
 ### 1. Clone repository
+```
 git clone git@github.com:zhixin-lim/DSA4262.git
 
 cd DSA4262
 
 cd "Individual Assignment 2"
+```
 
 ### 2. Create virtual environment
+```
 python3.11 -m venv venv
 
 source venv/bin/activate   # Mac/Linux
-
+```
 ### 3. Install dependencies
+```
 (pip install --upgrade pip)
 
 pip install -r requirements.txt
-
+```
 ### 4. Run notebook
+```
 jupyter notebook
-
+```
 Then open: 
 DSA4262 Individual Assignment 2.ipynb
 
